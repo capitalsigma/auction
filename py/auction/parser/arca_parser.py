@@ -20,6 +20,7 @@ import os
 import zipfile
 import re
 import logging
+import csv
 import gzip
 import datetime
 import time
@@ -305,6 +306,7 @@ Parse arca files and create book
         self.__output_path = self.__output_base + (build_book and ".h5" or "_AMD_.h5")
         logging.info("Parsing file %s\n\tto create %s"% (self.__input_path, self.__output_path))
         if self.__output_path.exists() and not force:
+            print 'Error: output file already exists. Use --force to overwrite.'
             return
         if not self.__output_path.parent.exists():
             os.makedirs(self.__output_path.parent)
@@ -320,11 +322,19 @@ Parse arca files and create book
         self.__parse_manager = ParseManager(self.__input_path, self.__h5_file)
         self.__parse_manager.mark_start()
 
-        hit_count = 0
+        input_type = re.search('\.[a-z]+$', self.__input_path)
+        input_type = input_type.group(0)
+
+        hit_count = 0 
         data_start_timestamp = None
 
-        for self.__line_number, line in enumerate(gzip.open(self.__input_path, 'rb')):
+        if input_type == '.csv':
+            csvfile = open(self.__input_path, 'rb')
+            infile = csv.reader(csvfile)
+        elif input_type == '.gz':
+            infile = gzip.open(self.__input_path,'rb')
 
+        for self.__line_number, line in enumerate(infile):
             if stop_early_at_hit and hit_count == stop_early_at_hit:
                 break 
 
@@ -336,8 +346,12 @@ Parse arca files and create book
                              (self.__line_number, hit_count, 
                               (self.__symbols and 
                                self.__symbols or "*")))
+            
+            if input_type == '.csv':
+                fields = line
+            elif input_type == '.gz':
+                fields = re.split(r'\s*,\s*', line)
 
-            fields = re.split(r'\s*,\s*', line)
             code = fields[0]
             record = None
             if code == 'A':
@@ -496,6 +510,5 @@ files for symbols present in the raw data.
         print "Examining", compressed_src.basename(), date
         if date:
             parser = ArcaParser(compressed_src, date, symbol_text, Set(options.symbols))
-            #parser.parse(True, 50000)
             parser.parse(True, False)
 
