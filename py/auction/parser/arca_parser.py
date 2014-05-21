@@ -328,8 +328,6 @@ Parse arca files and create book
 
         symbols_cleaned = map(lambda s: s if len(s) > 1 else ','+s+',', self.__symbols)
         symbol_regex = '/\(' + string.join(symbols_cleaned, '\|') + '\)/p'
-        print symbol_regex
-        print self.__input_path
             
         unzip = subprocess.Popen(['gzip','-d','-c', self.__input_path], stdout=subprocess.PIPE)
         sed = subprocess.Popen(['sed','-n',symbol_regex], stdin=unzip.stdout, stdout=subprocess.PIPE)
