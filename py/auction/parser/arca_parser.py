@@ -261,7 +261,7 @@ class ArcaBookBuilder(BookBuilder):
 
         # bids and asks have been updated, now update the record and append to the table
         self.make_record(amd_record.timestamp, 
-                         chicago_time_str(amd_record.timestamp),
+                         None,
                          amd_record.seq_num)
 
     
@@ -509,5 +509,5 @@ files for symbols present in the raw data.
         print "Examining", compressed_src.basename(), date
         if date:
             parser = ArcaParser(compressed_src, date, symbol_text, Set(options.symbols))
-            parser.parse(True, False)
+            parser.parse(True, force=options.force)
 
