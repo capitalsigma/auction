@@ -1,6 +1,7 @@
-auction
-=======
+This directory contains code to build continuous limit order books from CME, NASDAQ, and NYSE data. To run scripts in this library, please include a path to the `py` directory in PYTHONPATH. 
 
-This directory contains code to parse raw microsecond data and build continuous limit order books from CME, NASDAQ, and NYSE. 
+To parse the NYSE ARCA data, run the following command:
 
-To run scripts in this library, please include this directory in PYTHONPATH. 
+    python py/auction/parser/arca_bulk_parser.py -s GOOG -p *2010*
+    
+Relative paths to the relevant input and output directories are set in `/py/auction/paths.py`. 
