@@ -27,6 +27,7 @@ import time
 import string
 import pprint
 import traceback
+import subprocess
 from numpy import zeros, array
 
 __PriceRe__ = re.compile(r"\s*(\d*)(?:\.(\d+))?\s*")
@@ -322,19 +323,13 @@ Parse arca files and create book
         self.__parse_manager = ParseManager(self.__input_path, self.__h5_file)
         self.__parse_manager.mark_start()
 
-        input_type = re.search('\.[a-z]+$', self.__input_path)
-        input_type = input_type.group(0)
-
         hit_count = 0 
         data_start_timestamp = None
 
-        if input_type == '.csv':
-            csvfile = open(self.__input_path, 'rb')
-            infile = csv.reader(csvfile)
-        elif input_type == '.gz':
-            infile = gzip.open(self.__input_path,'rb')
+        csvfile = open(self.__input_path, 'rb')
+        infile = csv.reader(csvfile)
 
-        for self.__line_number, line in enumerate(infile):
+        for self.__line_number, fields in enumerate(infile):
             if stop_early_at_hit and hit_count == stop_early_at_hit:
                 break 
 
@@ -346,11 +341,6 @@ Parse arca files and create book
                              (self.__line_number, hit_count, 
                               (self.__symbols and 
                                self.__symbols or "*")))
-            
-            if input_type == '.csv':
-                fields = line
-            elif input_type == '.gz':
-                fields = re.split(r'\s*,\s*', line)
 
             code = fields[0]
             record = None
@@ -474,6 +464,8 @@ files for symbols present in the raw data.
     else:
         src_compressed_files = __ARCA_SRC_PATH__.files()
 
+    src_compressed_files = filter(lambda f: re.findall('.csv.gz$',f), src_compressed_files)
+
     symbol_text = None
     if not options.symbols:
         options.symbols = [ 
@@ -509,6 +501,14 @@ files for symbols present in the raw data.
         date = get_date_of_file(compressed_src)
         print "Examining", compressed_src.basename(), date
         if date:
-            parser = ArcaParser(compressed_src, date, symbol_text, Set(options.symbols))
+            tempfile = compressed_src.basename().replace('.csv.gz','_temp.csv')
+            temppath = __ARCA_SRC_PATH__ / tempfile
+            print 'Unzipping...'
+            f = open(temppath, 'w')
+            unzipped = subprocess.Popen(['gzip','-d','-c',__ARCA_SRC_PATH__ / compressed_src], stdout=subprocess.PIPE)
+            subprocess.call(['sed','-n','/SPY/p'], stdin=unzipped.stdout, stdout=f)
+            f.close()
+            print 'Begin parsing...'
+            parser = ArcaParser(path(temppath), date, symbol_text, Set(options.symbols))
             parser.parse(True, False)
 
