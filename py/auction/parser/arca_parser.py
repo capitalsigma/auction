@@ -503,10 +503,13 @@ files for symbols present in the raw data.
         if date:
             tempfile = compressed_src.basename().replace('.csv.gz','_temp.csv')
             temppath = __ARCA_SRC_PATH__ / tempfile
+            symbols_cleaned = map(lambda s: s if len(s) > 1 else ','+s+',', options.symbols)
+            symbol_regex = '/\(' + string.join(symbols_cleaned, '\|') + '\)/p'
+            print symbol_regex
             print 'Unzipping...'
             f = open(temppath, 'w')
             unzipped = subprocess.Popen(['gzip','-d','-c',__ARCA_SRC_PATH__ / compressed_src], stdout=subprocess.PIPE)
-            subprocess.call(['sed','-n','/SPY/p'], stdin=unzipped.stdout, stdout=f)
+            subprocess.call(['sed','-n',symbol_regex], stdin=unzipped.stdout, stdout=f)
             f.close()
             print 'Begin parsing...'
             parser = ArcaParser(path(temppath), date, symbol_text, Set(options.symbols))
