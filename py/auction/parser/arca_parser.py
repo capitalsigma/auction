@@ -326,8 +326,15 @@ Parse arca files and create book
         hit_count = 0 
         data_start_timestamp = None
 
-        csvfile = open(self.__input_path, 'rb')
-        infile = csv.reader(csvfile)
+        symbols_cleaned = map(lambda s: s if len(s) > 1 else ','+s+',', self.__symbols)
+        symbol_regex = '/\(' + string.join(symbols_cleaned, '\|') + '\)/p'
+        print symbol_regex
+        print self.__input_path
+            
+        unzip = subprocess.Popen(['gzip','-d','-c', self.__input_path], stdout=subprocess.PIPE)
+        sed = subprocess.Popen(['sed','-n',symbol_regex], stdin=unzip.stdout, stdout=subprocess.PIPE)
+        
+        infile = csv.reader(iter(sed.stdout.readline, ''))
 
         for self.__line_number, fields in enumerate(infile):
             if stop_early_at_hit and hit_count == stop_early_at_hit:
@@ -385,6 +392,8 @@ Parse arca files and create book
 
                     if 0 == hit_count % __FLUSH_FREQ__:
                         table.flush()
+
+        sed.wait()
 
         books_good = True
         total_unchanged = 0
@@ -501,17 +510,6 @@ files for symbols present in the raw data.
         date = get_date_of_file(compressed_src)
         print "Examining", compressed_src.basename(), date
         if date:
-            tempfile = compressed_src.basename().replace('.csv.gz','_temp.csv')
-            temppath = __ARCA_SRC_PATH__ / tempfile
-            symbols_cleaned = map(lambda s: s if len(s) > 1 else ','+s+',', options.symbols)
-            symbol_regex = '/\(' + string.join(symbols_cleaned, '\|') + '\)/p'
-            print symbol_regex
-            print 'Unzipping...'
-            f = open(temppath, 'w')
-            unzipped = subprocess.Popen(['gzip','-d','-c',__ARCA_SRC_PATH__ / compressed_src], stdout=subprocess.PIPE)
-            subprocess.call(['sed','-n',symbol_regex], stdin=unzipped.stdout, stdout=f)
-            f.close()
-            print 'Begin parsing...'
-            parser = ArcaParser(path(temppath), date, symbol_text, Set(options.symbols))
+            parser = ArcaParser(compressed_src, date, symbol_text, Set(options.symbols))
             parser.parse(True, False)
 
