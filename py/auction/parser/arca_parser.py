@@ -332,11 +332,11 @@ Parse arca files and create book
 
         unzip = subprocess.Popen(['gzip','-d','-c', self.__input_path],
                                  stdout=subprocess.PIPE,
-                                 universal_newlines=True)
+                                 bufsize=-1)
         sed = subprocess.Popen(['sed','-n',symbol_regex],
                                stdin=unzip.stdout,
                                stdout=subprocess.PIPE,
-                               universal_newlines=True)
+                               bufsize=-1)
 
         print "from sed: {}".format(sed.stdout.readline())
         print "from unzip: {}".format(unzip.stdout.readline())
@@ -526,7 +526,7 @@ files for symbols present in the raw data.
             parser = ArcaParser(compressed_src, date, symbol_text, Set(options.symbols))
 
             if options.profile:
-                profile = cProfile.profile()
+                profile = cProfile.Profile()
                 try:
                     profile.enable()
                     parser.parse(True, force=options.force)
