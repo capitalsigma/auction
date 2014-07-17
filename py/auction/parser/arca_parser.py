@@ -28,6 +28,7 @@ import string
 import pprint
 import traceback
 import subprocess
+import cProfile
 from numpy import zeros, array
 
 __PriceRe__ = re.compile(r"\s*(\d*)(?:\.(\d+))?\s*")
@@ -63,7 +64,7 @@ def make_timestamp(start_of_date, seconds, millis):
     except Exception,e:
         print "Invalid millis:", millis
         raise e
-        
+
     return start_of_date + seconds*1000000 + millis*1000
 
 def int_price(px_str):
@@ -86,7 +87,7 @@ def int_price(px_str):
 
         if not decimal_part:
             decimal_part = "0"
-        
+
         if len(decimal_part) > 6:
             raise RuntimeError("Invalid price - more than 6 decimal places:" + px_str)
 
@@ -99,7 +100,7 @@ Stores fields for single Add record
 """
 
     readable(seq_num=None, order_id=None, exchange=None, is_buy=None,
-             quantity=None, symbol=None, price=None, 
+             quantity=None, symbol=None, price=None,
              system_code=None, quote_id=None, timestamp=None)
 
     def __init__(self, fields, start_of_date):
@@ -122,9 +123,9 @@ class DeleteRecord(object):
 Stores fields for single Delete record
 """
 
-    readable(seq_num=None, order_id=None, symbol=None, 
+    readable(seq_num=None, order_id=None, symbol=None,
              exchange=None, system_code=None, quote_id=None,
-             is_buy=None, timestamp=None) 
+             is_buy=None, timestamp=None)
 
     def __init__(self, fields, start_of_date):
         """
@@ -133,8 +134,8 @@ Stores fields for single Delete record
         self.__seq_num = fields[1]
         self.__order_id = fields[2]
         self.__symbol = fields[5]
-        self.__exchange = fields[6]        
-        self.__system_code = fields[7]        
+        self.__exchange = fields[6]
+        self.__system_code = fields[7]
         self.__quote_id = fields[8]
         self.__is_buy = fields[9] == 'B'
         self.__timestamp = make_timestamp(start_of_date, fields[3], fields[4])
@@ -144,7 +145,7 @@ class ModifyRecord(object):
 Stores fields for single Modify record
 """
     readable(seq_num=None, order_id=None, quantity=None, price=None,
-             symbol=None, quote_id=None, is_buy=None, timestamp=None) 
+             symbol=None, quote_id=None, is_buy=None, timestamp=None)
 
     def __init__(self, fields, start_of_date):
         """
@@ -154,7 +155,7 @@ Stores fields for single Modify record
         self.__order_id = fields[2]
         self.__quantity = int(fields[3])
         self.__price = int_price(fields[4])
-        self.__symbol = fields[7]  
+        self.__symbol = fields[7]
         self.__quote_id = fields[10]
         self.__is_buy = fields[11] == 'B'
         self.__timestamp = make_timestamp(start_of_date, fields[5], fields[6])
@@ -165,7 +166,7 @@ class ArcaRecord(IsDescription):
     ts          = Int64Col()
     seq_num     = Int64Col()
     order_id    = Int64Col()
-    symbol      = StringCol(8) 
+    symbol      = StringCol(8)
     price       = Int64Col()
     quantity    = Int32Col()
     record_type = StringCol(1) # 'A', 'M', 'D'
@@ -260,11 +261,11 @@ class ArcaBookBuilder(BookBuilder):
             raise RuntimeError("Invalid record: " + amd_record)
 
         # bids and asks have been updated, now update the record and append to the table
-        self.make_record(amd_record.timestamp, 
+        self.make_record(amd_record.timestamp,
                          None,
                          amd_record.seq_num)
 
-    
+
 class ArcaParser(object):
     r"""
 
@@ -311,40 +312,49 @@ Parse arca files and create book
             return
         if not self.__output_path.parent.exists():
             os.makedirs(self.__output_path.parent)
-        self.__h5_file = openFile(self.__output_path, mode = "w", title = "ARCA Equity Data")
+        self.__h5_file = openFile(bytes(self.__output_path), mode = "w", title = "ARCA Equity Data")
         if not build_book:
             ## If not building book, then just writing out AMD data as hdf5
             filters = Filters(complevel=1, complib='zlib')
             group = self.__h5_file.createGroup("/", '_AMD_Data_', 'Add-Modify-Delete data')
-            table = self.__h5_file.createTable(group, 'records', ArcaRecord, 
+            table = self.__h5_file.createTable(group, 'records', ArcaRecord,
                                                "Data for "+str(self.__date), filters=filters)
             h5Record = table.row
 
         self.__parse_manager = ParseManager(self.__input_path, self.__h5_file)
         self.__parse_manager.mark_start()
 
-        hit_count = 0 
+        hit_count = 0
         data_start_timestamp = None
 
         symbols_cleaned = map(lambda s: s if len(s) > 1 else ','+s+',', self.__symbols)
         symbol_regex = '/\(' + string.join(symbols_cleaned, '\|') + '\)/p'
-            
-        unzip = subprocess.Popen(['gzip','-d','-c', self.__input_path], stdout=subprocess.PIPE)
-        sed = subprocess.Popen(['sed','-n',symbol_regex], stdin=unzip.stdout, stdout=subprocess.PIPE)
-        
+
+        unzip = subprocess.Popen(['gzip','-d','-c', self.__input_path],
+                                 stdout=subprocess.PIPE,
+                                 universal_newlines=True)
+        sed = subprocess.Popen(['sed','-n',symbol_regex],
+                               stdin=unzip.stdout,
+                               stdout=subprocess.PIPE,
+                               universal_newlines=True)
+
+        print "from sed: {}".format(sed.stdout.readline())
+        print "from unzip: {}".format(unzip.stdout.readline())
+        print "input path: {}".format(self.__input_path)
+
         infile = csv.reader(iter(sed.stdout.readline, ''))
 
         for self.__line_number, fields in enumerate(infile):
             if stop_early_at_hit and hit_count == stop_early_at_hit:
-                break 
+                break
 
             ###################################################
             # Show progress periodically
             ###################################################
             if 0 == (self.__line_number % 1000000):
-                logging.info("At %d hit count is %d on %s" % 
-                             (self.__line_number, hit_count, 
-                              (self.__symbols and 
+                logging.info("At %d hit count is %d on %s" %
+                             (self.__line_number, hit_count,
+                              (self.__symbols and
                                self.__symbols or "*")))
 
             code = fields[0]
@@ -359,8 +369,8 @@ Parse arca files and create book
                 continue
             else:
                 continue
-                #raise RuntimeError("Unexpected record type '" + 
-                #                   code + "' at line " + str(self.__line_number) + 
+                #raise RuntimeError("Unexpected record type '" +
+                #                   code + "' at line " + str(self.__line_number) +
                 #                   " of file " + self.__input_path)
 
             if self.__symbols and (not record.symbol in self.__symbols):
@@ -408,7 +418,7 @@ Parse arca files and create book
         self.__parse_manager.processed(self.__line_number+1)
         self.__parse_manager.mark_stop(books_good)
         self.__h5_file.close()
-        ParseManager.summarize_file(self.__output_path)
+        ParseManager.summarize_file(bytes(self.__output_path))
 
 
     def build_books(self, record):
@@ -436,27 +446,32 @@ Take input raw data and generate corresponding hdf5 data files as well as book
 files for symbols present in the raw data.
 """)
 
-    parser.add_argument('-d', '--date', 
+    parser.add_argument('-d', '--date',
                         dest='dates',
                         action='store',
                         nargs='*',
                         help='Date(s) to process, if empty all dates assumed')
 
-    parser.add_argument('-s', '--symbol', 
+    parser.add_argument('-s', '--symbol',
                         dest='symbols',
                         action='store',
                         nargs='*',
                         help='Symbols to include')
 
-    parser.add_argument('-f', '--force', 
+    parser.add_argument('-f', '--force',
                         dest='force',
                         action='store_true',
                         help='Overwrite existing files')
 
-    parser.add_argument('-v', '--verbose', 
+    parser.add_argument('-v', '--verbose',
                         dest='verbose',
                         action='store_true',
                         help='Output extra logging information')
+
+    parser.add_argument('-p', '--profile',
+                        dest='profile',
+                        action='store_true',
+                        help='Display profiling information')
 
     options = parser.parse_args()
 
@@ -475,9 +490,9 @@ files for symbols present in the raw data.
 
     symbol_text = None
     if not options.symbols:
-        options.symbols = [ 
+        options.symbols = [
             # Index ETFs
-            'SPY', 'DIA', 'QQQ', 
+            'SPY', 'DIA', 'QQQ',
             # Sectors
             'XLK', 'XLF', 'XLP', 'XLE', 'XLY', 'XLV', 'XLB',
             # Vanguard
@@ -485,9 +500,9 @@ files for symbols present in the raw data.
             # Energy
             'XOM', 'RDS', 'BP',
             # Home Improvement
-            'HD', 'LOW', 'XHB', 
+            'HD', 'LOW', 'XHB',
             # Banks
-            'MS', 'GS', 'BAC', 'JPM', 'C', 
+            'MS', 'GS', 'BAC', 'JPM', 'C',
             # Exchanges
             'CME', 'NYX',
             # Big Techs
@@ -509,5 +524,14 @@ files for symbols present in the raw data.
         print "Examining", compressed_src.basename(), date
         if date:
             parser = ArcaParser(compressed_src, date, symbol_text, Set(options.symbols))
-            parser.parse(True, force=options.force)
 
+            if options.profile:
+                profile = cProfile.profile()
+                try:
+                    profile.enable()
+                    parser.parse(True, force=options.force)
+                    profile.disable()
+                finally:
+                    profile.print_stats()
+            else:
+                parser.parse(True, force=options.force)

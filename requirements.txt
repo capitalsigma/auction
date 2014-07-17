@@ -1,7 +1,7 @@
-nterface==0.3.2
-Landscape-Client==12.05
-PAM==0.4.2
-PIL==1.1.7
+#GnuPGInterface==0.3.2
+#Landscape-Client==12.05
+#PAM==0.4.2
+#PIL==1.1.7
 Twisted-Core==11.0.0
 apt-xapian-index==0.44
 chardet==2.0.1
