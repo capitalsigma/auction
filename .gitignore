@@ -1,3 +1,8 @@
 venv/
 *.pyc
 __pycache__
+
+*.class
+
+data/
+book_data/

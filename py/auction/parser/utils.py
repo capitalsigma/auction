@@ -26,7 +26,7 @@ class PriceOrderedDict(object):
         self.L = []
         self.ascending = ascending
         self.sorted = True
-    
+
     def __len__(self):
         return len(self.L)
 
@@ -37,7 +37,7 @@ class PriceOrderedDict(object):
         return not self.ascending
 
     def update_quantity(self, px, q):
-        assert(len(self.L) == len(self.d))
+        # assert(len(self.L) == len(self.d))
         #print self.is_bid() and "B UPD" or "A UPD", px,"with", q
         qty = self.d.get(px)
         if qty:
@@ -72,7 +72,7 @@ class PriceOrderedDict(object):
         if self.ascending:
             return self.L[0:n]
         else:
-            return [ x for x in reversed(self.L[-n:]) ]
+            return reversed(self.L[-n:])
 
 class FileRecordCounter(object):
     """
@@ -106,7 +106,7 @@ class BookBuilder(object):
 
     _book_files_ = {}
 
-    symbol = property(lambda self: self._symbol, None, None, 
+    symbol = property(lambda self: self._symbol, None, None,
                       r"Symbol for the book")
 
     def __init__(self, symbol, h5_file, **rest):
@@ -118,11 +118,11 @@ class BookBuilder(object):
         h5_file = self._file_record_counter.h5_file
         filters = Filters(complevel=1, complib='zlib')
         group = h5_file.createGroup("/", symbol, 'Book data')
-        self._book_table = h5_file.createTable(group, 'books', BookTable, 
+        self._book_table = h5_file.createTable(group, 'books', BookTable,
                                                "Data for "+str(symbol), filters=filters)
         self._record = self._book_table.row
         if rest.get('include_trades'):
-            self._trade_table = h5_file.createTable(group, 'trades', TradeTable, 
+            self._trade_table = h5_file.createTable(group, 'trades', TradeTable,
                                                     "Trades for "+str(symbol), filters=filters)
             self._trade = self._trade_table.row
         else:
@@ -159,25 +159,30 @@ class BookBuilder(object):
         accordingly. This takes the new price data and updates the book and
         timestamps for storing.
         """
-        previous_bids = self._bids.copy()
-        previous_asks = self._asks.copy()
+        # previous_bids = self._bids.copy()
+        # previous_asks = self._asks.copy()
 
         #print self.symbol, "Bid top_n:", self._bids_to_qty.top_n(__LEVELS__)
         i = 0
         for i, px in enumerate(self._bids_to_qty.top_n(__LEVELS__)):
             self._bids[i][0] = px
             self._bids[i][1] = self._bids_to_qty.get_quantity(px)
-        for j in range(i, __LEVELS__):
-            self._bids[j][0] = 0
-            self._bids[j][1] = 0
+        # for j in range(i, __LEVELS__):
+        #     self._bids[j][0] = 0
+        #     self._bids[j][1] = 0
+        self._bids[i + 1:] = 0
+
 
         #print self.symbol, "Ask top_n:", self._asks_to_qty.top_n(__LEVELS__)
         for i, px in enumerate(self._asks_to_qty.top_n(__LEVELS__)):
             self._asks[i][0] = px
             self._asks[i][1] = self._asks_to_qty.get_quantity(px)
-        for j in range(i, __LEVELS__):
-            self._asks[j][0] = 0
-            self._asks[j][1] = 0
+
+        self._asks[i + 1:] = 0
+
+        # for j in range(i, __LEVELS__):
+        #     self._asks[j][0] = 0
+        #     self._asks[j][1] = 0
 
         self._record['bid'] = self._bids
         self._record['ask'] = self._asks
@@ -185,22 +190,23 @@ class BookBuilder(object):
         self._record['timestamp_s'] = ts_s
         self._record['seqnum'] = seqnum
 
-        top_bid = self._bids[0][0]
-        top_ask = self._asks[0][0]
-        if top_bid and top_ask and (top_bid >= top_ask):
-            tag = 'L' if (top_bid==top_ask) else 'C'
-            excp = PriceException(self._symbol, tag, (self._bids[0], self._asks[0])) 
-            #print excp.message
-            raise excp
+        # top_bid = self._bids[0][0]
+        # top_ask = self._asks[0][0]
+        # if top_bid and top_ask and (top_bid >= top_ask):
+        #     tag = 'L' if (top_bid==top_ask) else 'C'
+        #     excp = PriceException(self._symbol, tag, (self._bids[0], self._asks[0]))
+        #     #print excp.message
+        #     raise excp
 
-        if (self._bids == previous_bids).all() and (self._asks == previous_asks).all():
-            self._unchanged += 1
-        else:
-            self._record.append()
-            self._file_record_counter.increment_count()
-        
+        # if (self._bids == previous_bids).all() and (self._asks == previous_asks).all():
+        #     self._unchanged += 1
+        # else:
+        self._record.append()
+        self._file_record_counter.increment_count()
+
     def process_record(self, amd_record):
-        raise RuntimeError("process_record Subclass Responsibility")
+        # raise RuntimeError("process_record Subclass Responsibility")
+        raise NotImplementedError
 
     def bids(self):
         return self._bids
