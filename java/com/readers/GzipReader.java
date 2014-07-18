@@ -38,6 +38,9 @@ public class GzipReader implements Runnable {
 			reader.close();
 		} catch (IOException exn) {
 			System.err.println("Got error: " + exn.getMessage());
+		} finally {
+			// stop everyone else working
+			queue.acceptingOrders = false;
 		}
 	}
 }

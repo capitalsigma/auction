@@ -9,11 +9,13 @@ package com.containers;
 public class WaitFreeQueue<T> {
 	volatile int head = 0, tail = 0;
 	T[] items;
+	volatile public boolean acceptingOrders;
 
 	public WaitFreeQueue(int capacity) {
 		items = (T[])new Object[capacity];
 		head = 0;
 		tail = 0;
+		acceptingOrders = true;
 	}
 
 	public boolean enq(T x) {
