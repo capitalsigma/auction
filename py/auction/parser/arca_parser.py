@@ -495,7 +495,7 @@ files for symbols present in the raw data.
     src_compressed_files = filter(lambda f: re.findall('.csv.gz$',f), src_compressed_files)
 
     symbol_text = None
-    if not options.symbols or options.symbol_file:
+    if not (options.symbols or options.symbol_file_path):
         options.symbols = [
             # Index ETFs
             'SPY', 'DIA', 'QQQ',
@@ -523,6 +523,8 @@ files for symbols present in the raw data.
     elif options.symbol_file_path:
         options.symbols = [s.strip() for s in open(options.symbol_file_path, "r")]
 
+
+    print "running with symbols: {}".format(options.symbols)
     options.symbols.sort()
     if not symbol_text:
         symbol_text = string.join(options.symbols, '_')
