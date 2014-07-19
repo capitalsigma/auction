@@ -44,6 +44,14 @@ public class WaitFreeQueueTest {
 
 	}
 
+	@Test
+	public void testAcceptingOrders() {
+		WaitFreeQueue<String> stringQueue = new WaitFreeQueue<String>(3);
+
+		Assert.assertTrue(stringQueue.acceptingOrders);
+		stringQueue.acceptingOrders = false;
+		Assert.assertFalse(stringQueue.acceptingOrders);
+	}
 
 
 }

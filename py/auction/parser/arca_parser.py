@@ -473,6 +473,12 @@ files for symbols present in the raw data.
                         action='store_true',
                         help='Display profiling information')
 
+    parser.add_argument('-sf', '--symbol_file',
+                        dest='symbol_file_path',
+                        action='store',
+                        nargs='?',
+                        help='File containing a list of symbols, one per line.')
+
     options = parser.parse_args()
 
     if options.verbose:
@@ -489,7 +495,7 @@ files for symbols present in the raw data.
     src_compressed_files = filter(lambda f: re.findall('.csv.gz$',f), src_compressed_files)
 
     symbol_text = None
-    if not options.symbols:
+    if not options.symbols or options.symbol_file:
         options.symbols = [
             # Index ETFs
             'SPY', 'DIA', 'QQQ',
@@ -514,6 +520,8 @@ files for symbols present in the raw data.
             ]
 
         symbol_text = 'TOP'
+    elif options.symbol_file_path:
+        options.symbols = [s.strip() for s in open(options.symbol_file_path, "r")]
 
     options.symbols.sort()
     if not symbol_text:

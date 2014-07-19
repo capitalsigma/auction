@@ -159,8 +159,8 @@ class BookBuilder(object):
         accordingly. This takes the new price data and updates the book and
         timestamps for storing.
         """
-        # previous_bids = self._bids.copy()
-        # previous_asks = self._asks.copy()
+        previous_bids = self._bids.copy()
+        previous_asks = self._asks.copy()
 
         #print self.symbol, "Bid top_n:", self._bids_to_qty.top_n(__LEVELS__)
         i = 0
@@ -198,11 +198,11 @@ class BookBuilder(object):
         #     #print excp.message
         #     raise excp
 
-        # if (self._bids == previous_bids).all() and (self._asks == previous_asks).all():
-        #     self._unchanged += 1
-        # else:
-        self._record.append()
-        self._file_record_counter.increment_count()
+        if (self._bids == previous_bids).all() and (self._asks == previous_asks).all():
+            self._unchanged += 1
+        else:
+            self._record.append()
+            self._file_record_counter.increment_count()
 
     def process_record(self, amd_record):
         # raise RuntimeError("process_record Subclass Responsibility")
