@@ -522,6 +522,7 @@ files for symbols present in the raw data.
         symbol_text = 'TOP'
     elif options.symbol_file_path:
         options.symbols = [s.strip() for s in open(options.symbol_file_path, "r")]
+        symbol_text = 'FROM_{}'.format(os.path.basename(options.symbol_file_path))
 
 
     print "running with symbols: {}".format(options.symbols)

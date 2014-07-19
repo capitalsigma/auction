@@ -3,6 +3,7 @@ from numpy import *
 from attribute import readable, writable
 from auction.book import Book, BookTable
 from auction.trade import TradeTable
+
 import string
 
 __FLUSH_FREQ__ = 10000
