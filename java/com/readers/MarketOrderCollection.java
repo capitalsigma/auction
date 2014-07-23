@@ -49,21 +49,21 @@ public abstract class MarketOrderCollection extends HashMap<Integer, Integer> {
 
 		ret = super.put(price, quantity);
 
-		System.out.printf("Setting for price: %d, qty: %d\n", price, quantity);
-		System.out.println("About to update sortedKeys: " +
-						   Arrays.toString(sortedKeys.toArray()));
+		// System.out.printf("Setting for price: %d, qty: %d\n", price, quantity);
+		// System.out.println("About to update sortedKeys: " +
+		// 				   Arrays.toString(sortedKeys.toArray()));
 
 
 		if(quantity == 0) {
-			System.out.println("Removing.");
+ 			// System.out.println("Removing.");
 			sortedKeys.remove(price);
 		} else {
-			System.out.println("Adding.");
+			// System.out.println("Adding.");
 			sortedKeys.add(price);
 		}
 
-		System.out.println("Updated sortedKeys: " +
-						   Arrays.toString(sortedKeys.toArray()));
+		// System.out.println("Updated sortedKeys: " +
+		// 				   Arrays.toString(sortedKeys.toArray()));
 
 
 		return ret;

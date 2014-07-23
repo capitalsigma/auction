@@ -40,22 +40,22 @@ public class DataPoint {
 			return false;
 		}
 
-		boolean tickEq = other.ticker.equals(ticker);
-		boolean seqEq = other.seqNum == seqNum;
-		boolean tsEq = other.timeStamp == timeStamp;
-		boolean otEq = other.type == type;
-		boolean ordsEq = Arrays.deepEquals(other.orders, orders);
+		// boolean tickEq = other.ticker.equals(ticker);
+		// boolean seqEq = other.seqNum == seqNum;
+		// boolean tsEq = other.timeStamp == timeStamp;
+		// boolean otEq = other.type == type;
+		// boolean ordsEq = Arrays.deepEquals(other.orders, orders);
 
-		System.out.println("TickEq? " + tickEq);
-		System.out.println("SeqEq? " + seqEq);
-		System.out.println("tsEq? " + tsEq);
-		System.out.println("otEq? " + otEq);
-		System.out.println("ordsEq? " + ordsEq);
+		// System.out.println("TickEq? " + tickEq);
+		// System.out.println("SeqEq? " + seqEq);
+		// System.out.println("tsEq? " + tsEq);
+		// System.out.println("otEq? " + otEq);
+		// System.out.println("ordsEq? " + ordsEq);
 
-		System.out.println("This datapoint: ");
-		this.print();
-		System.out.println("Comparing to: ");
-		other.print();
+		// System.out.println("This datapoint: ");
+		// this.print();
+		// System.out.println("Comparing to: ");
+		// other.print();
 
 
 		return other.ticker.equals(ticker) &&

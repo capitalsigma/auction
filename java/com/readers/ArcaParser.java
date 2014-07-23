@@ -127,12 +127,12 @@ public class ArcaParser extends AbstractParser implements Runnable {
 
 		Order toModify = orderHistory.get(refNum);
 
-		System.out.println("old price: " + toModify.price);
+		// System.out.println("old price: " + toModify.price);
 
 		Integer currentQtyOfOldPrice = toUpdate.get(toModify.price);
 
-		System.out.println("Current qty at old price " +
-						   currentQtyOfOldPrice.toString());
+		// System.out.println("Current qty at old price " +
+		// 				   currentQtyOfOldPrice.toString());
 
 		toUpdate.put(toModify.price, currentQtyOfOldPrice - toModify.quantity);
 
@@ -195,7 +195,7 @@ public class ArcaParser extends AbstractParser implements Runnable {
 										 timeStamp,
 										 seqNum);
 
-		System.out.println("About to push a DataPoint.");
+		// System.out.println("About to push a DataPoint.");
 		toPush.equals(toPush);
 		// spin until we successfully push
 		while(!outQueue.enq(toPush)) { }
@@ -338,7 +338,7 @@ public class ArcaParser extends AbstractParser implements Runnable {
 				// Split into fields
 				asSplit = toParse.split(INPUT_SPLIT, IMPORTANT_SYMBOL_COUNT + 1);
 
-				System.out.println("asSplit: " + Arrays.toString(asSplit));
+				// System.out.println("asSplit: " + Arrays.toString(asSplit));
 
 				// Also note that containsKey is O(1)
 				if((recType = recordTypeLookup.get(asSplit[0])) == null){
