@@ -30,7 +30,7 @@ public class WaitFreeQueue<T> {
 	}
 
 	public T deq() {
-		if (tail - head == 0) {
+		if (isEmpty()) {
 			// throw new EmptyException();
 			return null;
 		} else {
@@ -38,6 +38,10 @@ public class WaitFreeQueue<T> {
 			head++;
 			return x;
 		}
+	}
+
+	public boolean isEmpty() {
+		return tail - head == 0;
 	}
 
 }

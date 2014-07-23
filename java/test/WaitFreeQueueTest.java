@@ -53,5 +53,18 @@ public class WaitFreeQueueTest {
 		Assert.assertFalse(stringQueue.acceptingOrders);
 	}
 
+	@Test
+	public void testIsEmpty() {
+		WaitFreeQueue<Integer> intQueue = new WaitFreeQueue<Integer>(4);
 
+		Assert.assertTrue(intQueue.isEmpty());
+
+		intQueue.enq(5);
+
+		Assert.assertFalse(intQueue.isEmpty());
+
+		intQueue.deq();
+
+		Assert.assertTrue(intQueue.isEmpty());
+	}
 }
