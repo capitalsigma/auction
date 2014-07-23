@@ -8,7 +8,9 @@ import ncsa.hdf.object.Datatype;
 import ncsa.hdf.object.Attribute;
 import ncsa.hdf.object.FileFormat;
 import ncsa.hdf.hdf5lib.HDF5Constants;
+import ncsa.hdf.hdf5lib.H5;
 import ncsa.hdf.hdf5lib.exceptions.HDF5Exception;
+import ncsa.hdf.hdf5lib.exceptions.HDF5LibraryException;
 import ncsa.hdf.object.Group;
 import ncsa.hdf.object.h5.H5Datatype;
 import ncsa.hdf.object.h5.H5File;
@@ -32,12 +34,6 @@ public class HDF5Writer implements Runnable {
 
 	    FileFormat fileFormat = FileFormat.getFileFormat(FileFormat.FILE_TYPE_HDF5);
 
-
-		// for (FileFormat f : FileFormat.getFileFormats()) {
-		// 	System.out.println("Found a new format: " + f.toString());
-
-		// }
-
 		if(fileFormat == null) {
 			throw new HDF5FormatNotFoundException();
 		}
@@ -47,11 +43,16 @@ public class HDF5Writer implements Runnable {
 		try {
 			fileHandle = (H5File) fileFormat.createFile(outPath,
 														FileFormat.FILE_CREATE_DELETE);
-			fileHandle = new H5File(outPath,
-									FileFormat.FILE_CREATE_DELETE);
+			// fileHandle = new H5File(outPath,
+			// 						FileFormat.FILE_CREATE_DELETE);
 
 			fileHandle.open();
+		} catch (HDF5Exception e) {
+			System.out.println("Caught: " + e.toString());
+			System.out.println("Message: " + e.getMessage());
+			throw new HDF5FileNotOpenedException();
 		} catch (Throwable t) {
+			System.out.println("Caught: " + t.toString());
 			throw new HDF5FileNotOpenedException();
 		}
 
@@ -74,27 +75,132 @@ public class HDF5Writer implements Runnable {
 	}
 
 	// define our datatypes
-	public void initializeFile() throws Exception {
-		try {
-			Datatype titleType = new H5Datatype(Datatype.CLASS_STRING,
-											  1,
-											  Datatype.ORDER_LE,
-											  Datatype.SIGN_NONE);
+	// TODO: throw good exn
+	public void initializeFile() throws HDF5Exception {
+		// try {
+		// String titleStr = "Equity Data";
 
-			Attribute titleAttr = new Attribute("TITLE",
-												titleType,
-												new long[] {1},
-												"Equity Data");
+		// Datatype titleType = createDatatypeForString(titleStr);
+		// Attribute titleAttr = new Attribute("TITLE",
+		// 									titleType,
+		// 									new long[] {1},
+		// 									new String[] {titleStr});
 
-			fileHandle.writeAttribute(rootGroup, titleAttr, false);
+		Attribute titleAttr = createAttributeForString("TITLE",
+													   "Equity Data");
+
+		fileHandle.writeAttribute(rootGroup, titleAttr, false);
 
 
 
-		} catch (Throwable t) {
+		// } catch (Throwable t) {
 
-		}
+		// }
 
 	}
+
+	Datatype createDatatypeForString(String attrValue) {
+		Datatype ret = new H5Datatype(Datatype.CLASS_STRING,
+									  attrValue.length() + 1,
+									  Datatype.ORDER_LE,
+									  Datatype.SIGN_NONE);
+
+		return ret;
+	}
+
+	Attribute createAttributeForString(String attrName, String attrValue) {
+		Datatype attrType = createDatatypeForString(attrValue);
+		Attribute attr = new Attribute(attrName,
+									   attrType,
+									   new long[] {1},
+									   new String[] {attrValue});
+
+		return attr;
+	}
+
+	public void closeFile() throws HDF5Exception {
+		fileHandle.close();
+	}
+
+
+	int createBooksDt() throws HDF5LibraryException {
+		// We can't use the nice OOP interface to build a compound
+		// datatype that has arrays inside of it (b/c it's nested). So
+		// instead, we use the ugly low-level one.
+		int sizeofSeqNum = 8;
+		int sizeofTimeStamp = 4;
+
+		int orderArrColumns = 2;
+		int orderArrRows = 10;
+		int sizeofOrderCell = 8;
+		int numOrderArrs = 2;
+
+		int sizeofOrderArr = orderArrColumns * orderArrRows * sizeofOrderCell;
+		int sizeofOrderArrs = numOrderArrs * sizeofOrderArr;
+
+		int totalSize = sizeofSeqNum + sizeofTimeStamp + sizeofOrderArrs;
+
+
+		int dtOrderArr = H5.H5Tarray_create(HDF5Constants.H5T_STD_I64LE,
+											2,
+											new long[] {orderArrRows,
+														orderArrColumns});
+		int dtSeqNum = HDF5Constants.H5T_STD_I64LE;
+		int dtTimeStamp = HDF5Constants.H5T_STD_I32LE;
+
+		int dtCompound = H5.H5Tcreate(HDF5Constants.H5T_COMPOUND,
+									  totalSize);
+
+		int result1 = H5.H5Tinsert(dtCompound,
+								   "ask",
+								   0,
+								   dtOrderArr);
+		assert result1 >= 0;
+
+		int result2 = H5.H5Tinsert(dtCompound,
+								   "bid",
+								   sizeofOrderArr,
+								   dtOrderArr);
+		assert result2 >= 0;
+
+		int result3 = H5.H5Tinsert(dtCompound,
+									  "seqnum",
+									  sizeofOrderArrs,
+									  dtSeqNum);
+		assert result3 >= 0;
+
+		int result4 =  H5.H5Tinsert(dtCompound,
+									"timestamp",
+									sizeofOrderArrs + sizeofSeqNum,
+									dtTimeStamp);
+
+		assert result4 > 0;
+	}
+
+	void createBooksDs(Group toAdd) {
+		// TODO: somehow we get toAdd's loc_id, then we use H5Acreate
+
+
+	}
+
+	public Group initializeGroup(String ticker) throws HDF5Exception {
+		try {
+			Group toRet = fileHandle.createGroup(ticker, rootGroup);
+			Attribute classAttr = createAttributeForString("CLASS",
+														   "Group");
+
+			fileHandle.writeAttribute(toRet, classAttr, false);
+
+
+
+			return toRet;
+		} catch (Throwable t) {
+			System.err.println("Caught exn: " + t.toString());
+			throw new HDF5GroupException();
+		}
+	}
+
+
 
 	// if we have that in our file already, return it. if not, make a new one
 	Group getGroup(String ticker) throws HDF5GroupException {
@@ -107,7 +213,7 @@ public class HDF5Writer implements Runnable {
 		if(toRet == null) {
 			try {
 				// then we didn't have it yet
-				Group toAdd = fileHandle.createGroup(ticker, rootGroup);
+				Group toAdd = initializeGroup(ticker);
 				tickerGroups.put(ticker, toAdd);
 			} catch (Throwable t) {
 				throw new HDF5GroupException();
@@ -135,7 +241,8 @@ public class HDF5Writer implements Runnable {
 
 		} finally {
 			try {
-				fileHandle.close();
+				// fileHandle.close();
+				closeFile();
 			} catch (Throwable t) {
 				System.err.println("An exception occured while " +
 								   "trying to save the current file: " +
