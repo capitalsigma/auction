@@ -4,4 +4,14 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="output" path=""/>
 	<classpathentry kind="lib" exported="true" path="dependencies/junit-411.jar"/>
+	<classpathentry kind="lib"
+					exported="true"
+					path="dependencies/HDF_Group/HDFView/2.10.1/lib/jarhdf5-2.10.1.jar"/>
+	<classpathentry kind="lib"
+					exported="true"
+					path="dependencies/HDF_Group/HDFView/2.10.1/lib/jarh5obj.jar"/>
+	<classpathentry kind="lib"
+					exported="true"
+					path="dependencies/HDF_Group/HDFView/2.10.1/lib/jarhdfobj.jar"/>
+
 </classpath>
