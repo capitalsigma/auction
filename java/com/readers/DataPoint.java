@@ -4,14 +4,14 @@ import java.util.Arrays;
 
 // maybe this should go in with the writers
 public class DataPoint {
-	public int[][] orders;
+	public int[][][] orders;
 	public OrderType type;
 	public int timeStamp;
 	public long seqNum;
 	public String ticker;
 
 	public DataPoint(String _ticker,
-					 int[][] _orders,
+					 int[][][] _orders,
 					 OrderType _type,
 					 int _timeStamp,
 					 long _seqNum) {
@@ -21,6 +21,18 @@ public class DataPoint {
 		timeStamp = _timeStamp;
 		seqNum = _seqNum;
 	}
+
+	public void print() {
+		System.out.printf("my tick: %s\n", ticker);
+		System.out.printf("my seq: %d\n", seqNum);
+		System.out.printf("my ts: %d\n", timeStamp);
+		System.out.printf("my type: %s\n",
+						  type == OrderType.Buy ? "Buy" : "Sell");
+
+		System.out.printf("my arrays: %s\n", Arrays.deepToString(orders));
+	}
+
+
 
 
 	public boolean equals(DataPoint other) {
@@ -40,17 +52,11 @@ public class DataPoint {
 		System.out.println("otEq? " + otEq);
 		System.out.println("ordsEq? " + ordsEq);
 
-		System.out.printf("my tick: %s, other tick: %s\n", ticker, other.ticker);
-		System.out.printf("my seq: %d, other seq: %d\n", seqNum, other.seqNum);
-		System.out.printf("my ts: %d, other ts: %d\n", timeStamp, other.timeStamp);
-		System.out.printf("my ot: %d, other ot: %d\n",
-						  type == OrderType.Buy ? 1 : 0,
-						  other.type == OrderType.Buy ? 1 : 0);
+		System.out.println("This datapoint: ");
+		this.print();
+		System.out.println("Comparing to: ");
+		other.print();
 
-		// System.out.println("my orders[0]: " + Arrays.toString(orders[0]));
-		// System.out.println("other orders[0]: " + Arrays.toString(other.orders[0]));
-		System.out.printf("my orders.length: %d, other orders.length: %d\n",
-						  orders.length, other.orders.length);
 
 		return other.ticker.equals(ticker) &&
 			(other.seqNum == seqNum) &&

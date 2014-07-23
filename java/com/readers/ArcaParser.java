@@ -174,8 +174,14 @@ public class ArcaParser extends AbstractParser implements Runnable {
 			break;
 		}
 
+		int[][] toBuyNow =
+			ordersNow.get(ticker).get(OrderType.Buy).topN(LEVELS);
+		int[][] toSellNow =
+			ordersNow.get(ticker).get(OrderType.Sell).topN(LEVELS);
+		int[][][] ordersNow = {toBuyNow, toSellNow};
+
 		DataPoint toPush = new DataPoint(ticker,
-										 toUpdate.topN(LEVELS),
+										 ordersNow,
 										 ordType,
 										 timeStamp,
 										 seqNum);
@@ -187,7 +193,7 @@ public class ArcaParser extends AbstractParser implements Runnable {
 	}
 
 
-	int parsePrice(String priceString) {
+	int makePrice(String priceString) {
 		String[] parts = priceString.split("\\.");
 
 		// System.out.println("got price: " + priceString);
@@ -229,7 +235,7 @@ public class ArcaParser extends AbstractParser implements Runnable {
 	// b/s is B(uy) | S(ell)
 	// 0:type, 1:seq, 2:refNum, _, 4:b/s, 5:count, 6:ticker, 7:price, 8:sec,
 	// 9:ms, _, _, _
-	public void parseAdd(String[] asSplit) {
+	void parseAdd(String[] asSplit) {
 		String ticker;
 		if(ordersNow.containsKey(ticker = asSplit[6])) {
 			long seqNum; 		// need 10 digits
@@ -248,7 +254,7 @@ public class ArcaParser extends AbstractParser implements Runnable {
 			qty = Integer.parseInt(asSplit[5]);
 			// we do his trick from original to floating point error
 			// price = // Integer.parseInt(asSplit[7] + "000000");
-			price = parsePrice(asSplit[7]);
+			price = makePrice(asSplit[7]);
 
 			timeStamp = makeTimestamp(asSplit[8], asSplit[9]);
 
@@ -261,7 +267,7 @@ public class ArcaParser extends AbstractParser implements Runnable {
 	}
 
 	// 1:seq, 2:order id, 3:seconds, 4:ms, 9:type
-	public void parseDelete(String[] asSplit) {
+	void parseDelete(String[] asSplit) {
 		String ticker;
 		if(ordersNow.containsKey(ticker = asSplit[5])) {
 			System.out.println("Parsing delete");
@@ -282,8 +288,25 @@ public class ArcaParser extends AbstractParser implements Runnable {
 		}
 	}
 
-	public void parseModify(String[] asSplit) {
+	// 1: seq, 2:ref num, 3:qty, 4:price, 5:sec, 6:ms, 7:ticker, b/s:11,
+	void parseModify(String[] asSplit) {
+		String ticker;
+		if(ordersNow.containsKey(ticker = asSplit[7])) {
+			long seqNum; 		// need 10 digits
+			long refNum;		// need 20, but just taking last 19
+			OrderType ordType;
+			int qty; 		// need 9 digits
+			int price;
+			int timeStamp; 			// 8 digits
+			RecordType recType = RecordType.Modify;
 
+			seqNum = Long.parseLong(asSplit[1]);
+			refNum = makeRefNum(asSplit[2]);
+			qty = Integer.parseInt(asSplit[3]);
+			price = makePrice(asSplit[4]);
+			timeStamp = makeTimestamp(asSplit[6], asSplit[7]);
+
+		}
 	}
 
 	public void run() {
