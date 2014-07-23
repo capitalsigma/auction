@@ -44,8 +44,8 @@ public class ArcaParser extends AbstractParser implements Runnable {
 	// Split CSVs on commas
 	String INPUT_SPLIT = ",";
 
-	// We stop caring after the tenth CSV value
-	int IMPORTANT_SYMBOL_COUNT = 10;
+	// For modify, we need to pull at most 12 things out of record
+	int IMPORTANT_SYMBOL_COUNT = 13;
 
 	// like in Python -- this is our top N values in buy/sell prices we care about
 	int LEVELS = 10;
@@ -126,13 +126,22 @@ public class ArcaParser extends AbstractParser implements Runnable {
 		assert orderHistory.containsKey(refNum);
 
 		Order toModify = orderHistory.get(refNum);
-		Integer currentQtyOfOldPrice = toUpdate.get(toModify.price);
-		Integer currentQtyOfNewPrice = toUpdate.get(price);
 
+		System.out.println("old price: " + toModify.price);
+
+		Integer currentQtyOfOldPrice = toUpdate.get(toModify.price);
+
+		System.out.println("Current qty at old price " +
+						   currentQtyOfOldPrice.toString());
+
+		toUpdate.put(toModify.price, currentQtyOfOldPrice - toModify.quantity);
+
+		// Note that we need to do this AFTER we delete, otherwise we
+		// can grab the wrong value
+		Integer currentQtyOfNewPrice = toUpdate.get(price);
 		int qtyOfNewPriceToAdd = currentQtyOfNewPrice == null ?
 			0 : currentQtyOfNewPrice;
 
-		toUpdate.put(toModify.price, currentQtyOfOldPrice - toModify.quantity);
 		toUpdate.put(price, qty + qtyOfNewPriceToAdd);
 
 	}
@@ -304,7 +313,7 @@ public class ArcaParser extends AbstractParser implements Runnable {
 			refNum = makeRefNum(asSplit[2]);
 			qty = Integer.parseInt(asSplit[3]);
 			price = makePrice(asSplit[4]);
-			timeStamp = makeTimestamp(asSplit[6], asSplit[7]);
+			timeStamp = makeTimestamp(asSplit[5], asSplit[6]);
 			ordType = makeOrderType(asSplit[11]);
 
 			processRecord(recType, seqNum, refNum, ordType,

@@ -28,6 +28,12 @@ public class ArcaParserTest {
 	String TEST_DELETE_BUY1 =
 		"D,2,12884901908,28800,857,FOO,B,B,AARCA,B,";
 
+	String TEST_MODIFY_BUY1 =
+		"M,43,12884901908,900,0.3825,29909,390,FOO,B,B,AARCA,B,";
+	String TEST_MODIFY_BUY2 =
+		"M,2,12884902050,3000,0.98,33643,922,FOO,B,B,AARCA,B,";
+
+
 
 	@Test
 	public void testInstantiate() {
@@ -118,7 +124,8 @@ public class ArcaParserTest {
 
 		inQ.enq(TEST_ADD_BUY1);
 		inQ.enq(TEST_ADD_BUY2);
-		inQ.enq(TEST_DELETE_BUY1);
+		inQ.enq(TEST_MODIFY_BUY1);
+		inQ.enq(TEST_MODIFY_BUY2);
 
 		Thread runThread = new Thread(parser);
 		// parser.run();
@@ -132,18 +139,44 @@ public class ArcaParserTest {
 		outQ.deq();
 		outQ.deq();
 
-		int[][][] expectedOrders = {
+		int[][][] expectedOrders1 = {
 			{
-				{980000, 3200}
+				{980000, 3200},
+				{382500, 900}
+			},
+			{}
+		};
+
+		int[][][] expectedOrders2 = {
+			{
+				{980000, 3000},
+				{382500, 900},
 			},
 			{}
 		};
 
 
-		DataPoint expected = new DataPoint("FOO", expectedOrders, OrderType.Buy,
-										   28800857, 2);
+		DataPoint expected1 = new DataPoint("FOO", expectedOrders1, OrderType.Buy,
+											29909390, 43);
 
+		DataPoint expected2 = new DataPoint("FOO", expectedOrders2, OrderType.Buy,
+											33643922, 2);
 
-		assertTrue(expected.equals(outQ.deq()));
+		DataPoint toTest1 = outQ.deq();
+		DataPoint toTest2 = outQ.deq();
+
+		System.out.println("TO TEST #1:");
+		toTest1.print();
+		System.out.println("TO TEST #2:");
+		toTest2.print();
+
+		boolean test1 = expected1.equals(toTest1);
+		boolean test2 = expected2.equals(toTest2);
+
+		System.out.println("Test 1: " + test1);
+		System.out.println("Test 2: " + test2);
+
+		assertTrue(test1);
+		assertTrue(test2);
 	}
 }
