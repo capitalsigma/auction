@@ -13,5 +13,16 @@
 	<classpathentry kind="lib"
 					exported="true"
 					path="dependencies/HDF_Group/HDFView/2.10.1/lib/jarhdfobj.jar"/>
+	<classpathentry kind="lib"
+					exported="true"
+					path="dependencies/HDF_Group/HDFView/2.10.1/lib/*.jar"/>
+
+	<classpathentry kind="lib"
+					exported="true"
+					path="dependencies/HDF_Group/HDFView/2.10.1/lib/slf4j-api-1.7.5.jar"/>
+
+	<classpathentry kind="lib"
+					exported="true"
+					path="dependencies/HDF_Group/HDFView/2.10.1/lib/slf4j-nop-1.7.5.jar"/>
 
 </classpath>
