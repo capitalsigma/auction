@@ -305,6 +305,10 @@ public class ArcaParser extends AbstractParser implements Runnable {
 			qty = Integer.parseInt(asSplit[3]);
 			price = makePrice(asSplit[4]);
 			timeStamp = makeTimestamp(asSplit[6], asSplit[7]);
+			ordType = makeOrderType(asSplit[11]);
+
+			processRecord(recType, seqNum, refNum, ordType,
+						  qty, ticker, price, timeStamp);
 
 		}
 	}
