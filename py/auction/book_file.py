@@ -6,7 +6,7 @@ import sys
 
 class RecordPointer(object):
     readable(symbol=0, index=0, count=0, current=None)
-    
+
     def __init__(self, symbol, data_set):
         self.__symbol = symbol
         self.__data_set = data_set
@@ -33,7 +33,7 @@ class RecordPointer(object):
             self.__book = Book(self.__data_set[self.__index])
             self.__timestamp = self.__book.timestamp()
         return result
-    
+
     def __str__(self):
         return self.__symbol + ':' + str(self.timestamp())
 
@@ -42,7 +42,7 @@ class BookFileReader(object):
 A handle on an hdf file with standardized book data to read
 """
 
-    readable(file_path=None, data_sets=[]) 
+    readable(file_path=None, data_sets=[])
 
     def __init__(self, file_path, symbols):
         """
@@ -63,21 +63,20 @@ A handle on an hdf file with standardized book data to read
             if not next_book:
                 break
             func(self.__data_sets[0].symbol, next_book)
-        
+
 
 if __name__ == "__main__":
     import os
     import pprint
-    from auction.paths import *    
+    from auction.paths import *
     reader = BookFileReader(CME_OUT_PATH / '20111017', ['ESZ1'])
     count = 0
 
     def print_record(symbol, b):
         global count
         if (0 == (count%100000)):
-            print count, symbol, b.timestamp_s(), b.top() 
+            print count, symbol, b.timestamp_s(), b.top()
         count += 1
         return
 
     reader.ordered_visit(print_record)
-    

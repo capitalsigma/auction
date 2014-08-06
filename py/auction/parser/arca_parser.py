@@ -190,7 +190,10 @@ class ArcaBookBuilder(BookBuilder):
         orders = self._bid_orders if is_buy else self._ask_orders
         side = "B" if is_buy else "A"
 
+        print "processing record {} for seqnum {}".format(amd_record, amd_record.seq_num)
+
         if isinstance(amd_record, AddRecord):
+            # print "processing add record"
             entry = (amd_record.price, amd_record.quantity)
             #current = orders.setdefault(amd_record.order_id, entry)
             current = orders.get(amd_record.order_id)
@@ -205,11 +208,14 @@ class ArcaBookBuilder(BookBuilder):
                 # Put this new add at front of list so pop effects FIFO
                 #orders[amd_record.order_id].insert(0, entry)
                 orders[amd_record.order_id].append(entry)
+            # print "got entry: {}".format(entry)
 
             if amd_record.is_buy:
                 self._bids_to_qty.update_quantity(entry[0], entry[1])
             else:
                 self._asks_to_qty.update_quantity(entry[0], entry[1])
+
+
 
         elif isinstance(amd_record, DeleteRecord):
             assert(amd_record.symbol == self._symbol)
@@ -260,6 +266,7 @@ class ArcaBookBuilder(BookBuilder):
         else:
             raise RuntimeError("Invalid record: " + amd_record)
 
+        # print "about to make a record"
         # bids and asks have been updated, now update the record and append to the table
         self.make_record(amd_record.timestamp,
                          None,
@@ -328,7 +335,7 @@ Parse arca files and create book
         data_start_timestamp = None
 
         symbols_cleaned = map(lambda s: s if len(s) > 1 else ','+s+',', self.__symbols)
-        symbol_regex = '/\(' + string.join(symbols_cleaned, '\|') + '\)/p'
+        symbol_regex = r'/\(' + string.join(symbols_cleaned, r'\|') + r'\)/p'
 
         unzip = subprocess.Popen(['gzip','-d','-c', self.__input_path],
                                  stdout=subprocess.PIPE,
@@ -338,13 +345,15 @@ Parse arca files and create book
                                stdout=subprocess.PIPE,
                                bufsize=-1)
 
-        print "from sed: {}".format(sed.stdout.readline())
-        print "from unzip: {}".format(unzip.stdout.readline())
+        # print "symbol regex: {}".format(symbol_regex)
+        # print "from sed: {}".format(sed.stdout.readline())
+        # print "from unzip: {}".format(unzip.stdout.readline())
         print "input path: {}".format(self.__input_path)
 
         infile = csv.reader(iter(sed.stdout.readline, ''))
 
         for self.__line_number, fields in enumerate(infile):
+            # print "reading fields: {}".format(fields)
             if stop_early_at_hit and hit_count == stop_early_at_hit:
                 break
 
@@ -372,17 +381,21 @@ Parse arca files and create book
                 #raise RuntimeError("Unexpected record type '" +
                 #                   code + "' at line " + str(self.__line_number) +
                 #                   " of file " + self.__input_path)
+            # print "built record: {}".format(record)
 
             if self.__symbols and (not record.symbol in self.__symbols):
+                # print "passing"
                 continue
             else:
                 hit_count += 1
+                # print "setting start timestamp"
 
                 # record the timestamp of the first record as data_start
                 if not data_start_timestamp:
                     data_start_timestamp = record.timestamp
 
                 if build_book:
+                    # print "calling book builder"
                     self.build_books(record)
                 else:
                     h5Record['ts'] = record.timestamp
@@ -425,8 +438,11 @@ Parse arca files and create book
         """
         Dispatch the new record to the appropriate BookBuilder for the symbol
         """
+        # print "building book for record: {}".format(record)
+
         builder = self.__book_builders.get(record.symbol, None)
         if not builder:
+            # print "building a new builder"
             builder = ArcaBookBuilder(record.symbol, self.__h5_file)
             self.__book_builders[record.symbol] = builder
 
@@ -436,6 +452,7 @@ Parse arca files and create book
             #print traceback.format_exc()
             self.__parse_manager.warning(record.symbol +': ' + e.message, e.tag, record.timestamp, self.__line_number+1)
         except Exception as e:
+            print traceback.format_exc()
             self.__parse_manager.warning(record.symbol +': ' + e.message, 'G', record.timestamp, self.__line_number+1)
 
 if __name__ == "__main__":
@@ -525,7 +542,7 @@ files for symbols present in the raw data.
         symbol_text = 'FROM_{}'.format(os.path.basename(options.symbol_file_path))
 
 
-    print "running with symbols: {}".format(options.symbols)
+    # print "running with symbols: {}".format(options.symbols)
     options.symbols.sort()
     if not symbol_text:
         symbol_text = string.join(options.symbols, '_')

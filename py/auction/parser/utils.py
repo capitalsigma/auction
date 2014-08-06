@@ -32,6 +32,7 @@ class PriceOrderedDict(object):
         return len(self.L)
 
     def get_quantity(self, px):
+        # print "getting quantity for {} = {}".format(px, self.d.get(px, 0))
         return self.d.get(px, 0)
 
     def is_bid(self):
@@ -67,9 +68,11 @@ class PriceOrderedDict(object):
             return self.L[-1]
 
     def top_n(self, n):
+        # print "fetching top {}".format(n)
         if not self.sorted:
             self.L.sort()
             self.sorted = True
+        # print "got sorted: {}".format(self.L)
         if self.ascending:
             return self.L[0:n]
         else:
@@ -162,24 +165,32 @@ class BookBuilder(object):
         """
         previous_bids = self._bids.copy()
         previous_asks = self._asks.copy()
+        is_nonzero = False
+
+        # print "making record for seqnum {}".format(seqnum)
 
         #print self.symbol, "Bid top_n:", self._bids_to_qty.top_n(__LEVELS__)
         i = 0
         for i, px in enumerate(self._bids_to_qty.top_n(__LEVELS__)):
+            is_nonzero = True
             self._bids[i][0] = px
             self._bids[i][1] = self._bids_to_qty.get_quantity(px)
         # for j in range(i, __LEVELS__):
         #     self._bids[j][0] = 0
         #     self._bids[j][1] = 0
-        self._bids[i + 1:] = 0
+        # print "writing bids from i = {}".format(i)
+        self._bids[i + is_nonzero:] = 0
 
+        is_nonzero = False
 
         #print self.symbol, "Ask top_n:", self._asks_to_qty.top_n(__LEVELS__)
         for i, px in enumerate(self._asks_to_qty.top_n(__LEVELS__)):
+            is_nonzero = True
             self._asks[i][0] = px
             self._asks[i][1] = self._asks_to_qty.get_quantity(px)
 
-        self._asks[i + 1:] = 0
+        # print "writing asks from i = {}".format(i)
+        self._asks[i + is_nonzero:] = 0
 
         # for j in range(i, __LEVELS__):
         #     self._asks[j][0] = 0
@@ -199,9 +210,15 @@ class BookBuilder(object):
         #     #print excp.message
         #     raise excp
 
+
+        # print "got new bids:\n{} \nand old bids: \n{}".format(self._bids, previous_bids)
+        # print "got new asks:\n{} \nand old asks: \n{}".format(self._asks, previous_asks)
+        # adding override so the first line is always written
         if (self._bids == previous_bids).all() and (self._asks == previous_asks).all():
+            # print "no change, skipping"
             self._unchanged += 1
         else:
+            # print "found a change"
             self._record.append()
             self._file_record_counter.increment_count()
 
